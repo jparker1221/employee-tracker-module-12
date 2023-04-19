@@ -6,15 +6,15 @@ My motivation for this project was to build a command-line application from scra
 
 ## Installation
 
-
+N/A
 
 ## Usage
 
-
+N/A
 
 ## Credits
 
-
+N/A
 
 ## License
 
