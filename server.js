@@ -5,15 +5,20 @@ const cTable = require('console.table');
 
 // Connect to database
 const db = mysql.createConnection(
-    {
-      host: '127.0.0.1',
-      port: 3001,
-      user: 'root',
-      password: '',
-      database: 'employees_db'
-    },
-    console.log(`Connected to the employees_db database.`)
-  );
+  {
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'root',
+    password: '',
+    database: 'employees_db'
+  },
+  console.log(`Connected to the employees_db database.`)
+);
+
+db.connect((err) => {
+  if (err) throw err;
+  start();
+})
 
 // Function to start employee tracker application
 function start() {
@@ -34,7 +39,7 @@ function start() {
       ]
     })
     .then((answer) => {
-      switch(answer.action) {
+      switch (answer.action) {
         case "View all departments":
           viewAllDepartments();
           break;
@@ -65,7 +70,7 @@ function start() {
 // Function to view all departments
 function viewAllDepartments() {
   const query = "SELECT * FROM department";
-  connection.query(query, (err, res) => {
+  db.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
     start();
@@ -75,7 +80,7 @@ function viewAllDepartments() {
 // Function to view all roles
 function viewAllRoles() {
   const query = "SELECT * FROM role";
-  connection.query(query, (err, res) => {
+  db.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
     start();
@@ -85,7 +90,7 @@ function viewAllRoles() {
 // Function to view all employees
 function viewAllEmployees() {
   const query = "SELECT * FROM employee";
-  connection.query(query, (err, res) => {
+  db.query(query, (err, res) => {
     if (err) throw err;
     console.table(res);
     start();
@@ -94,17 +99,125 @@ function viewAllEmployees() {
 
 // Function to add a department
 function addDepartment() {
-
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "department_name",
+      message: "What would you like to call the new department?",
+    }
+  ])
+    .then((answers) => {
+      const query = "INSERT INTO department SET ?";
+      db.query(query, answers, (err, res) => {
+        if (err) throw err;
+        console.table(res);
+        start();
+      })
+    })
 }
 
 // Function to add a role
 function addRole() {
-
+  const query = "SELECT * FROM department";
+  db.query(query, (err, res) => {
+    if (err) throw err;
+    const departmentArray = res.map((dpt) => (
+      {
+        name: dpt.department_name,
+        value: dpt.id,
+      }
+    ))
+    // console.log(departmentArray)
+    inquirer.prompt(
+      [
+        {
+          name: 'title',
+          type: 'input',
+          message: 'What is the title for this role?',
+        },
+        {
+          name: 'salary',
+          type: 'number',
+          message: 'What is the salary for this role?',
+        },
+        {
+          name: 'department_id',
+          type: 'list',
+          message: 'Choose a department for this role:',
+          choices: departmentArray,
+        },
+      ]
+    )
+      .then((answers) => {
+        const query = 'INSERT INTO role SET ?'
+        db.query(query, answers, (err, res) => {
+          if (err) throw err;
+          console.table(res);
+          start();
+        })
+      }
+      )
+  });
 }
 
 // Function to add an employee
 function addEmployee() {
-
+  const query = "SELECT * FROM employee WHERE manager_id IS NULL";
+  db.query(query, (err, res) => {
+    if (err) throw err;
+    const employeeArray = res.map((emp) => (
+      {
+        name: emp.first_name,
+        value: emp.id,
+      }
+    ))
+    const query = "SELECT * FROM role";
+    db.query(query, (err, res) => {
+      if (err) throw err;
+      const roleArray = res.map((role) => (
+        {
+          name: role.title,
+          value: role.id,
+        }
+      ))
+      // console.log(departmentArray)
+      inquirer.prompt(
+        [
+          {
+            name: 'first_name',
+            type: 'input',
+            message: 'What is the first name of this employee?',
+          },
+          {
+            name: 'last_name',
+            type: 'input',
+            message: 'What is the last name of this employee?',
+          },
+          {
+            name: 'role_id',
+            type: 'list',
+            message: 'Choose a role for this employee:',
+            choices: roleArray,
+          },
+          {
+            name: 'manager_id',
+            type: 'list',
+            message: "Choose your employee's manager:",
+            choices: employeeArray,
+          }
+        ]
+      )
+        .then((answers) => {
+          const query = 'INSERT INTO employee SET ?'
+          db.query(query, answers, (err, res) => {
+            if (err) throw err;
+            console.table(res);
+            start();
+          })
+        }
+        )
+    });
+  });
 }
 
 // Function to update an employee role
@@ -114,6 +227,6 @@ function updateEmployeeRole() {
 
 // Function to quit application
 function quit() {
-  connection.end();
+  db.end();
   console.log('Goodbye!');
 }
