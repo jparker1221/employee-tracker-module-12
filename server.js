@@ -6,11 +6,11 @@ const cTable = require('console.table');
 // Connect to database
 const db = mysql.createConnection(
   {
-    host: '127.0.0.1',
+    host: "127.0.0.1",
     port: 3306,
-    user: 'root',
-    password: '',
-    database: 'employees_db'
+    user: "root",
+    password: "",
+    database: "employees_db"
   },
   console.log(`Connected to the employees_db database.`)
 );
@@ -24,9 +24,9 @@ db.connect((err) => {
 function start() {
   inquirer
     .prompt({
-      type: 'list',
-      name: 'action',
-      message: 'What would you like to do?',
+      name: "action",
+      type: "list",
+      message: "What would you like to do?",
       choices: [
         "View all departments",
         "View all roles",
@@ -101,8 +101,8 @@ function viewAllEmployees() {
 function addDepartment() {
   inquirer.prompt([
     {
-      type: "input",
       name: "department_name",
+      type: "input",
       message: "What would you like to call the new department?",
     }
   ])
@@ -111,6 +111,7 @@ function addDepartment() {
       db.query(query, answers, (err, res) => {
         if (err) throw err;
         console.table(res);
+        console.log(`The ${answers.department_name} department has been created.`)
         start();
       })
     })
@@ -131,28 +132,29 @@ function addRole() {
     inquirer.prompt(
       [
         {
-          name: 'title',
-          type: 'input',
-          message: 'What is the title for this role?',
+          name: "title",
+          type: "input",
+          message: "What is the title for this role?",
         },
         {
-          name: 'salary',
-          type: 'number',
-          message: 'What is the salary for this role?',
+          name: "salary",
+          type: "number",
+          message: "What is the salary for this role?",
         },
         {
-          name: 'department_id',
-          type: 'list',
-          message: 'Choose a department for this role:',
+          name: "department_id",
+          type: "list",
+          message: "Choose a department for this role:",
           choices: departmentArray,
         },
       ]
     )
       .then((answers) => {
-        const query = 'INSERT INTO role SET ?'
+        const query = "INSERT INTO role SET ?"
         db.query(query, answers, (err, res) => {
           if (err) throw err;
           console.table(res);
+          console.log(`The role of ${answers.title} has been created.`)
           start();
         })
       }
@@ -184,34 +186,35 @@ function addEmployee() {
       inquirer.prompt(
         [
           {
-            name: 'first_name',
-            type: 'input',
-            message: 'What is the first name of this employee?',
+            name: "first_name",
+            type: "input",
+            message: "What is the first name of this employee?",
           },
           {
-            name: 'last_name',
-            type: 'input',
-            message: 'What is the last name of this employee?',
+            name: "last_name",
+            type: "input",
+            message: "What is the last name of this employee?",
           },
           {
-            name: 'role_id',
-            type: 'list',
-            message: 'Choose a role for this employee:',
+            name: "role_id",
+            type: "list",
+            message: "Choose a role for this employee:",
             choices: roleArray,
           },
           {
-            name: 'manager_id',
-            type: 'list',
+            name: "manager_id",
+            type: "list",
             message: "Choose your employee's manager:",
             choices: employeeArray,
           }
         ]
       )
         .then((answers) => {
-          const query = 'INSERT INTO employee SET ?'
+          const query = "INSERT INTO employee SET ?"
           db.query(query, answers, (err, res) => {
             if (err) throw err;
             console.table(res);
+            console.log(`${answers.first_name} ${answers.last_name} has been added to the database.`)
             start();
           })
         }
@@ -222,7 +225,53 @@ function addEmployee() {
 
 // Function to update an employee role
 function updateEmployeeRole() {
+  const query = "SELECT * FROM employee";
+  db.query(query, (err, res) => {
+    if (err) throw err;
+    const employeeArray = res.map((emp) => (
+      {
+        name: emp.first_name,
+        value: emp.id,
+      }
+    ))
+    const query = "SELECT * FROM role";
+    db.query(query, (err, res) => {
+      if (err) throw err;
+      const roleArray = res.map((role) => (
+        {
+          name: role.title,
+          value: role.id,
+        }
+      ))
+      inquirer.prompt(
+        [
+          {
+            name: "employee",
+            type: "list",
+            message: "Which employee's role do you want to update?",
+            choices: employeeArray,
+          },
+          {
+            name: "role_id",
+            type: "list",
+            message: "Choose a new role for this employee:",
+            choices: roleArray,
+          },
 
+        ]
+      )
+        .then((answers) => {
+          const query = "UPDATE employee SET role_id = ? WHERE id = ?"
+          db.query(query, answers, (err, res) => {
+            if (err) throw err;
+            console.table(res);
+            console.log(`${answers.employee}'s role has been updated to ${answers.role_id}.`)
+            start();
+          })
+        }
+        )
+    });
+  });
 }
 
 // Function to quit application
